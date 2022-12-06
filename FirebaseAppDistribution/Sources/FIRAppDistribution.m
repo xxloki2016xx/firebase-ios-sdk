@@ -24,12 +24,13 @@
 #import "FirebaseAppDistribution/Sources/FIRFADLogger.h"
 #import "FirebaseAppDistribution/Sources/Private/FIRAppDistribution.h"
 #import "FirebaseAppDistribution/Sources/Private/FIRAppDistributionRelease.h"
+#import "FirebaseAppDistribution/Sources/Public/FirebaseAppDistribution/FIRAppDistroInterop.h"
 
-/// Empty protocol to register with FirebaseCore's component system.
-@protocol FIRAppDistributionInstanceProvider <NSObject>
-@end
+///// Empty protocol to register with FirebaseCore's component system.
+//@protocol FIRAppDistributionInstanceProvider <NSObject>
+//@end
 
-@interface FIRAppDistribution () <FIRLibrary, FIRAppDistributionInstanceProvider>
+@interface FIRAppDistribution () <FIRLibrary, FIRAppDistroInterop>
 @property(nonatomic) BOOL isTesterSignedIn;
 
 @property(nullable, nonatomic) FIRAppDistributionUIService *uiService;
@@ -68,7 +69,7 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
 #pragma mark - Singleton Support
 
 - (instancetype)initWithApp:(FIRApp *)app appInfo:(NSDictionary *)appInfo {
-  // FIRFADInfoLog(@"Initializing Firebase App Distribution");
+  FIRFADInfoLog(@"Initializing Firebase App Distribution");
   self = [super init];
 
   if (self) {
@@ -99,7 +100,7 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
   };
 
   FIRComponent *component =
-      [FIRComponent componentWithProtocol:@protocol(FIRAppDistributionInstanceProvider)
+      [FIRComponent componentWithProtocol:@protocol(FIRAppDistroInterop)
                       instantiationTiming:FIRInstantiationTimingEagerInDefaultApp
                              dependencies:@[]
                             creationBlock:creationBlock];
@@ -113,8 +114,7 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
   // Get the instance from the `FIRApp`'s container. This will create a new instance the
   // first time it is called, and since `isCacheable` is set in the component creation
   // block, it will return the existing instance on subsequent calls.
-  id<FIRAppDistributionInstanceProvider> instance =
-      FIR_COMPONENT(FIRAppDistributionInstanceProvider, defaultApp.container);
+  id<FIRAppDistroInterop> instance = FIR_COMPONENT(FIRAppDistroInterop, defaultApp.container);
 
   // In the component creation block, we return an instance of `FIRAppDistribution`. Cast it and
   // return it.
@@ -204,6 +204,13 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
 
 - (NSString *)getAppBuild {
   return [[NSBundle mainBundle] objectForInfoDictionaryKey:(NSString *)kCFBundleVersionKey];
+}
+
+- (NSString *)getCodeHash {
+  NSString *executablePath = [[NSBundle mainBundle] executablePath];
+  FIRAppDistributionMachO *machO = [[FIRAppDistributionMachO alloc] initWithPath:executablePath];
+
+  return [machO codeHash];
 }
 
 - (void)signOutTester {

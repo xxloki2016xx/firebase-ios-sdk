@@ -30,7 +30,8 @@
                         fileManager:(FIRCLSFileManager *)fileManager
                         dataArbiter:(FIRCLSDataCollectionArbiter *)dataArbiter
                            settings:(FIRCLSSettings *)settings
-                      onDemandModel:(FIRCLSOnDemandModel *)onDemandModel {
+                      onDemandModel:(FIRCLSOnDemandModel *)onDemandModel
+                          appDistro:(nullable id<FIRAppDistroInterop>)appDistro {
   self = [super init];
   if (!self) {
     return nil;
@@ -40,6 +41,7 @@
   _googleTransport = googleTransport;
   _installations = installations;
   _analytics = analytics;
+  _appDistro = appDistro;
   _fileManager = fileManager;
   _dataArbiter = dataArbiter;
   _settings = settings;

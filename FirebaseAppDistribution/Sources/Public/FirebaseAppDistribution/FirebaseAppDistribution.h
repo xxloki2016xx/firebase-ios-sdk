@@ -14,3 +14,4 @@
 
 #import "FIRAppDistribution.h"
 #import "FIRAppDistributionRelease.h"
+#import "FIRAppDistroInterop.h"

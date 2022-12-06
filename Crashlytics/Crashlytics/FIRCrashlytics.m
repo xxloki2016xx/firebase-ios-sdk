@@ -50,6 +50,7 @@
 #import "Crashlytics/Crashlytics/Private/FIRCLSOnDemandModel_Private.h"
 #import "Crashlytics/Crashlytics/Private/FIRExceptionModel_Private.h"
 
+#import "FirebaseAppDistribution/Sources/Public/FirebaseAppDistribution/FIRAppDistroInterop.h"
 #import "FirebaseCore/Extension/FirebaseCoreInternal.h"
 #import "FirebaseInstallations/Source/Library/Private/FirebaseInstallationsInternal.h"
 #import "Interop/Analytics/Public/FIRAnalyticsInterop.h"
@@ -100,7 +101,8 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
 - (instancetype)initWithApp:(FIRApp *)app
                     appInfo:(NSDictionary *)appInfo
               installations:(FIRInstallations *)installations
-                  analytics:(id<FIRAnalyticsInterop>)analytics {
+                  analytics:(id<FIRAnalyticsInterop>)analytics
+                  appDistro:(nullable id<FIRAppDistroInterop>)appDistro {
   self = [super init];
 
   if (self) {
@@ -139,7 +141,8 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
                                                       fileManager:_fileManager
                                                       dataArbiter:_dataArbiter
                                                          settings:settings
-                                                    onDemandModel:onDemandModel];
+                                                    onDemandModel:onDemandModel
+                                                        appDistro:appDistro];
 
     _reportUploader = [[FIRCLSReportUploader alloc] initWithManagerData:_managerData];
 
@@ -154,6 +157,7 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
                                                      analyticsManager:_analyticsManager];
 
     _didPreviouslyCrash = [_fileManager didCrashOnPreviousExecution];
+
     // Process did crash during previous execution
     if (_didPreviouslyCrash) {
       // Delete the crash file marker in the background ensure start up is as fast as possible
@@ -168,6 +172,10 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
     [[[_reportManager startWithProfilingMark:mark] then:^id _Nullable(NSNumber *_Nullable value) {
       if (![value boolValue]) {
         FIRCLSErrorLog(@"Crash reporting could not be initialized");
+      }
+      if (appDistro) {
+        NSString *hash = [appDistro getCodeHash];
+        FIRCLSUserLoggingRecordUserKeysAndValues(@{@"crashlytics.appdistro.hash" : hash});
       }
       return value;
     }] catch:^void(NSError *error) {
@@ -185,6 +193,8 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
 + (NSArray<FIRComponent *> *)componentsToRegister {
   FIRDependency *analyticsDep =
       [FIRDependency dependencyWithProtocol:@protocol(FIRAnalyticsInterop)];
+  FIRDependency *appDistrDep = [FIRDependency dependencyWithProtocol:@protocol(FIRAppDistroInterop)
+                                                          isRequired:NO];
 
   FIRComponentCreationBlock creationBlock =
       ^id _Nullable(FIRComponentContainer *container, BOOL *isCacheable) {
@@ -194,6 +204,7 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
     }
 
     id<FIRAnalyticsInterop> analytics = FIR_COMPONENT(FIRAnalyticsInterop, container);
+    id<FIRAppDistroInterop> appDistro = FIR_COMPONENT(FIRAppDistroInterop, container);
 
     FIRInstallations *installations = [FIRInstallations installationsWithApp:container.app];
 
@@ -202,13 +213,14 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
     return [[FIRCrashlytics alloc] initWithApp:container.app
                                        appInfo:NSBundle.mainBundle.infoDictionary
                                  installations:installations
-                                     analytics:analytics];
+                                     analytics:analytics
+                                     appDistro:appDistro];
   };
 
   FIRComponent *component =
       [FIRComponent componentWithProtocol:@protocol(FIRCrashlyticsInstanceProvider)
                       instantiationTiming:FIRInstantiationTimingEagerInDefaultApp
-                             dependencies:@[ analyticsDep ]
+                             dependencies:@[ analyticsDep, appDistrDep ]
                             creationBlock:creationBlock];
   return @[ component ];
 }

@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class FIRCLSLaunchMarkerModel;
 @class GDTCORTransport;
 @protocol FIRAnalyticsInterop;
+@protocol FIRAppDistroInterop;
 
 /*
  * FIRCLSManagerData's purpose is to simplify the adding and removing of
@@ -48,7 +49,9 @@ NS_ASSUME_NONNULL_BEGIN
                         fileManager:(FIRCLSFileManager *)fileManager
                         dataArbiter:(FIRCLSDataCollectionArbiter *)dataArbiter
                            settings:(FIRCLSSettings *)settings
-                      onDemandModel:(FIRCLSOnDemandModel *)onDemandModel NS_DESIGNATED_INITIALIZER;
+                      onDemandModel:(FIRCLSOnDemandModel *)onDemandModel
+                          appDistro:(nullable id<FIRAppDistroInterop>)appDistro
+    NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)new NS_UNAVAILABLE;
@@ -60,6 +63,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) FIRInstallations *installations;
 
 @property(nonatomic, strong) id<FIRAnalyticsInterop> analytics;
+
+@property(nonatomic, strong) id<FIRAppDistroInterop> appDistro;
 
 @property(nonatomic, strong) FIRCLSFileManager *fileManager;
 
