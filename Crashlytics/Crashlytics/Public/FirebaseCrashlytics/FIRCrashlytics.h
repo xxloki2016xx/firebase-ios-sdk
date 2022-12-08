@@ -25,6 +25,11 @@ cause problems when registering exception handlers."
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// Empty protocol to register with FirebaseCore's component system.
+@protocol FIRCrashlyticsInstanceProvider <NSObject>
+- (void)setCustomKeysAndValues:(NSDictionary *)keysAndValues;
+@end
+
 /**
  * The Firebase Crashlytics API provides methods to annotate and manage fatal and
  * non-fatal reports captured and reported to Firebase Crashlytics.

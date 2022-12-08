@@ -15,6 +15,7 @@
 
 #import <GoogleUtilities/GULAppDelegateSwizzler.h>
 #import <GoogleUtilities/GULUserDefaults.h>
+#import "Crashlytics/Crashlytics/Public/FirebaseCrashlytics/FIRCrashlytics.h"
 #import "FirebaseCore/Extension/FirebaseCoreInternal.h"
 #import "FirebaseInstallations/Source/Library/Private/FirebaseInstallationsInternal.h"
 
@@ -33,6 +34,7 @@
 @property(nonatomic) BOOL isTesterSignedIn;
 
 @property(nullable, nonatomic) FIRAppDistributionUIService *uiService;
+@property(nullable, nonatomic) id<FIRCrashlyticsInstanceProvider> crashlytics;
 
 @end
 
@@ -67,7 +69,9 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
 
 #pragma mark - Singleton Support
 
-- (instancetype)initWithApp:(FIRApp *)app appInfo:(NSDictionary *)appInfo {
+- (instancetype)initWithApp:(FIRApp *)app
+                    appInfo:(NSDictionary *)appInfo
+                crashlytics:(nullable id<FIRCrashlyticsInstanceProvider>)crashlytics {
   // FIRFADInfoLog(@"Initializing Firebase App Distribution");
   self = [super init];
 
@@ -75,6 +79,15 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
     [GULAppDelegateSwizzler proxyOriginalDelegate];
     self.uiService = [FIRAppDistributionUIService sharedInstance];
     [GULAppDelegateSwizzler registerAppDelegateInterceptor:[self uiService]];
+    self.crashlytics = crashlytics;
+
+    if (self.crashlytics) {
+      NSString *executablePath = [[NSBundle mainBundle] executablePath];
+      FIRAppDistributionMachO *machO =
+          [[FIRAppDistributionMachO alloc] initWithPath:executablePath];
+      NSString *codeHash = [machO codeHash];
+      [self.crashlytics setCustomKeysAndValues:@{@"com.crashlytics.appdistro.hash" : codeHash}];
+    }
   }
 
   return self;
@@ -85,23 +98,29 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
 }
 
 + (NSArray<FIRComponent *> *)componentsToRegister {
+  FIRDependency *crashlyticsDep =
+      [FIRDependency dependencyWithProtocol:@protocol(FIRCrashlyticsInstanceProvider)
+                                 isRequired:NO];
   FIRComponentCreationBlock creationBlock =
       ^id _Nullable(FIRComponentContainer *container, BOOL *isCacheable) {
     if (!container.app.isDefaultApp) {
       FIRFADErrorLog(@"Firebase App Distribution only works with the default app.");
       return nil;
     }
+    id<FIRCrashlyticsInstanceProvider> crashlytics =
+        FIR_COMPONENT(FIRCrashlyticsInstanceProvider, container);
 
     *isCacheable = YES;
 
     return [[FIRAppDistribution alloc] initWithApp:container.app
-                                           appInfo:NSBundle.mainBundle.infoDictionary];
+                                           appInfo:NSBundle.mainBundle.infoDictionary
+                                       crashlytics:crashlytics];
   };
 
   FIRComponent *component =
       [FIRComponent componentWithProtocol:@protocol(FIRAppDistributionInstanceProvider)
                       instantiationTiming:FIRInstantiationTimingEagerInDefaultApp
-                             dependencies:@[]
+                             dependencies:@[ crashlyticsDep ]
                             creationBlock:creationBlock];
   return @[ component ];
 }
@@ -145,6 +164,10 @@ NSString *const kFIRFADSignInStateKey = @"FIRFADSignInState";
 
       [[self uiService] resetUIState];
       return;
+    }
+
+    if (identifier) {
+      [self.crashlytics setCustomKeysAndValues:@{@"com.crashlytics.appdistro.tester" : identifier}];
     }
 
     NSString *requestURL = [NSString

@@ -69,9 +69,10 @@ static atomic_bool _hasInitializedInstance;
 
 NSString *const FIRCLSGoogleTransportMappingID = @"1206";
 
-/// Empty protocol to register with FirebaseCore's component system.
-@protocol FIRCrashlyticsInstanceProvider <NSObject>
-@end
+///// Empty protocol to register with FirebaseCore's component system.
+//@protocol FIRCrashlyticsInstanceProvider <NSObject>
+//- (void)setCustomKeysAndValues:(NSDictionary *)keysAndValues;
+//@end
 
 @interface FIRCrashlytics () <FIRLibrary, FIRCrashlyticsInstanceProvider>
 
