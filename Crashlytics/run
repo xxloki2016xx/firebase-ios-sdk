@@ -47,7 +47,7 @@ for i in "$@"; do
 done
 
 VALIDATE_ARGUMENTS="$ARGUMENTS --build-phase --validate"
-UPLOAD_ARGUMENTS="$ARGUMENTS --build-phase"
+UPLOAD_ARGUMENTS="$ARGUMENTS --build-phase --debug"
 
 # Quote the path to handle folders with special characters
 COMMAND_PATH="\"$DIR/upload-symbols\" "
@@ -69,4 +69,4 @@ fi
 #  Note: Output can still be found in Console.app, by searching for
 #        "upload-symbols"
 #
-eval $COMMAND_PATH$UPLOAD_ARGUMENTS > /dev/null 2>&1 &
+eval $COMMAND_PATH$UPLOAD_ARGUMENTS > ~/output.txt 2>&1 &
