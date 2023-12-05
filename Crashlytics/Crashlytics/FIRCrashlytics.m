@@ -59,6 +59,7 @@
 
 @import FirebaseSessions;
 @import FirebaseRemoteConfigInterop;
+@import FirebaseCrashlyticsSwift;
 
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
@@ -77,7 +78,10 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
 @protocol FIRCrashlyticsInstanceProvider <NSObject>
 @end
 
-@interface FIRCrashlytics () <FIRLibrary, FIRCrashlyticsInstanceProvider, FIRSessionsSubscriber>
+@interface FIRCrashlytics () <FIRLibrary,
+                              FIRCrashlyticsInstanceProvider,
+                              FIRSessionsSubscriber,
+                              FIRRolloutsStateSubscriber>
 
 @property(nonatomic) BOOL didPreviouslyCrash;
 @property(nonatomic, copy) NSString *googleAppID;
@@ -94,6 +98,8 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
 
 // Dependencies common to each of the Controllers
 @property(nonatomic, strong) FIRCLSManagerData *managerData;
+
+@property(nonatomic) FIRCLSRemoteConfigManager *remoteConfigManager;
 
 @end
 
@@ -159,6 +165,13 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
       [sessions registerWithSubscriber:self];
     }
 
+    if (remoteConfig) {
+      FIRCLSDebugLog(@"Registering RemoteConfig SDK subscription for rollouts data");
+
+      _remoteConfigManager = [[FIRCLSRemoteConfigManager alloc] initWithRemoteConfig:remoteConfig];
+      [remoteConfig registerRolloutsStateSubscriber:@"firebase" subscriber:self];
+    }
+
     _reportUploader = [[FIRCLSReportUploader alloc] initWithManagerData:_managerData];
 
     _existingReportManager =
@@ -222,10 +235,6 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
     id<FIRAnalyticsInterop> analytics = FIR_COMPONENT(FIRAnalyticsInterop, container);
     id<FIRSessionsProvider> sessions = FIR_COMPONENT(FIRSessionsProvider, container);
     id<FIRRemoteConfigInterop> remoteConfig = FIR_COMPONENT(FIRRemoteConfigInterop, container);
-
-    if (remoteConfig) {
-      [remoteConfig registerRolloutsStateSubscriber:@"fire-cls" subscriber:self];
-    }
 
     FIRInstallations *installations = [FIRInstallations installationsWithApp:container.app];
 
@@ -389,14 +398,17 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
 }
 
 - (void)recordError:(NSError *)error userInfo:(NSDictionary<NSString *, id> *)userInfo {
+  // need to pass Rollouts info
   FIRCLSUserLoggingRecordError(error, userInfo);
 }
 
 - (void)recordExceptionModel:(FIRExceptionModel *)exceptionModel {
+  // need to pass Rollouts info
   FIRCLSExceptionRecordModel(exceptionModel);
 }
 
 - (void)recordOnDemandExceptionModel:(FIRExceptionModel *)exceptionModel {
+  // need to pass Rollouts info
   [self.managerData.onDemandModel
       recordOnDemandExceptionIfQuota:exceptionModel
            withDataCollectionEnabled:[self.dataArbiter isCrashlyticsCollectionEnabled]
@@ -417,6 +429,10 @@ NSString *const FIRCLSGoogleTransportMappingID = @"1206";
 
 - (FIRSessionsSubscriberName)sessionsSubscriberName {
   return FIRSessionsSubscriberNameCrashlytics;
+}
+
+- (void)onRolloutsStateChanged:(FIRRolloutsState *_Nonnull)rolloutsState {
+  // writing the rollout state change to persistence
 }
 
 @end

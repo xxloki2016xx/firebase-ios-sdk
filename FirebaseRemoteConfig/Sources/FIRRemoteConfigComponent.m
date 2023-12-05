@@ -35,6 +35,18 @@ static FIRRemoteConfigComponent *_sharedDefaultAppRemoteConfigSingleton = nil;
   return nil;
 }
 
+static NSMutableDictionary<NSString *, FIRRemoteConfigComponent *> *_componentInstances = nil;
+
++ (FIRRemoteConfigComponent *)getComponentForApp:(FIRApp *)app {
+  @synchronized(_componentInstances) {
+    if (![_componentInstances objectForKey:app.name]) {
+      _componentInstances[app.name] = [[self alloc] initWithApp:app];
+    }
+    return _componentInstances[app.name];
+  }
+  return nil;
+}
+
 /// Default method for retrieving a Remote Config instance, or creating one if it doesn't exist.
 - (FIRRemoteConfig *)remoteConfigForNamespace:(NSString *)remoteConfigNamespace {
   if (!remoteConfigNamespace) {

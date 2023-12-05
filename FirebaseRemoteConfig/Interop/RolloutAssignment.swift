@@ -11,11 +11,11 @@ import Foundation
 public class RolloutAssignment: NSObject {
   @objc public var rolloutId: String
   @objc public var variantId: String
-  @objc public var templateVersion: String
+  @objc public var templateVersion: Int64
   @objc public var parameterKey: String
   @objc public var parameterValue: String
 
-  public init(rolloutId: String, variantId: String, templateVersion: String, parameterKey: String,
+  public init(rolloutId: String, variantId: String, templateVersion: Int64, parameterKey: String,
               parameterValue: String) {
     self.rolloutId = rolloutId
     self.variantId = variantId

@@ -354,6 +354,7 @@ static void FIRCLSUserLoggingRecordErrorUserInfo(FIRCLSFile *file,
 static void FIRCLSUserLoggingWriteError(FIRCLSFile *file,
                                         NSError *error,
                                         NSDictionary<NSString *, id> *additionalUserInfo,
+
                                         NSArray *addresses,
                                         uint64_t timestamp) {
   FIRCLSFileWriteSectionStart(file, "error");
@@ -373,6 +374,13 @@ static void FIRCLSUserLoggingWriteError(FIRCLSFile *file,
   // user-info
   FIRCLSUserLoggingRecordErrorUserInfo(file, "info", [error userInfo]);
   FIRCLSUserLoggingRecordErrorUserInfo(file, "extra_info", additionalUserInfo);
+
+  // rollouts
+  FIRCLSFileWriteHashKey(file, "rollouts");
+  FIRCLSFileWriteArrayStart(file);
+  // within writing rollouts info
+
+  FIRCLSFileWriteArrayEnd(file);
 
   FIRCLSFileWriteHashEnd(file);
   FIRCLSFileWriteSectionEnd(file);
