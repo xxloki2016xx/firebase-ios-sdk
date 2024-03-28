@@ -110,6 +110,12 @@ Pod::Spec.new do |s|
     'OTHER_LD_FLAGS' => '$(inherited) -sectcreate __TEXT __info_plist',
     'HEADER_SEARCH_PATHS' => '"${PODS_TARGET_SRCROOT}"',
   }
+  
+  s.script_phase = {
+    :name => 'Copy Swift Header',
+    :script => 'COMPATIBILITY_HEADER_PATH="${BUILT_PRODUCTS_DIR}/Swift Compatibility Header/${PRODUCT_MODULE_NAME}-Swift.h"; ditto "${DERIVED_SOURCES_DIR}/${PRODUCT_MODULE_NAME}-Swift.h" "${COMPATIBILITY_HEADER_PATH}"; ditto "${PODS_ROOT}/Headers/Public/FirebaseCrashlytics/FirebaseCrashlytics.modulemap" "${MODULE_MAP_PATH}"; echo "\n\nmodule ${PRODUCT_MODULE_NAME}.Swift {\n  header \"${COMPATIBILITY_HEADER_PATH}\"\n  requires objc\n}\n" >> "${MODULE_MAP_PATH}"',
+    :execution_position => :before_compile
+  }
 
   s.test_spec 'unit' do |unit_tests|
     unit_tests.scheme = { :code_coverage => true }

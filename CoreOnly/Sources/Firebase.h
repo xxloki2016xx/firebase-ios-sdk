@@ -36,6 +36,7 @@
 
   #if __has_include(<FirebaseCrashlytics/FirebaseCrashlytics.h>)
     #import <FirebaseCrashlytics/FirebaseCrashlytics.h>
+    #import <FirebaseCrashlytics/FirebaseCrashlytics-Swift.h>
   #endif
 
   #if __has_include(<FirebaseDatabase/FirebaseDatabase.h>)
